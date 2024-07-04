@@ -11,6 +11,7 @@ library(tidyverse)
 library(tidytuesdayR)
 library(ggforce)
 library(ggtext)
+library(glue)
 
 tuesdata <- tt_load('2024-06-25')
 
@@ -25,14 +26,14 @@ c('#ff0000','#ff7400','#fff400', '#00ff04', '#00ecff')
 pride <- df |> 
   arrange(release_date) |> 
   mutate(release_year = lubridate::year(release_date),
-         id = as.factor(id))
+         id = as.factor(id)) |> 
+  rename(p_title = title)
 
 ```
 
 ```{r}
 
 pride |> 
-  filter(popularity > 1, vote_count > 200) |> 
   group_by(release_year) |> 
   summarise(n = n(),
             adult = sum(adult == TRUE),
@@ -40,28 +41,22 @@ pride |>
             vote_average = mean(vote_average)) |>
   mutate(rep_adult = adult/n) |> 
   arrange(desc(release_year)) |> 
-  ggplot(aes(x = release_year, y = n, color = NULL, fill = release_year)) +
+  ggplot(aes(x = release_year, y = n, color = NULL, fill = n)) +
   geom_col() + 
   theme_minimal() +
   labs(x = 'Ano de Lançamento',
        y = NULL) + 
-  scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) + 
-  xlim(1940,2022)
+  scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) 
 
-
-```
-```{r}
-pride |> 
-  arrange(release_year)
 
 ```
 
 ```{r}
 
 pride |> 
-  mutate(title = fct_reorder(title, popularity)) |> 
+  mutate(p_title = fct_reorder(p_title, popularity)) |> 
   filter(popularity > 35) |> 
-  ggplot(aes(x = title, y = popularity, color = NULL, fill = popularity)) +
+  ggplot(aes(x = p_title, y = popularity, color = NULL, fill = popularity)) +
   geom_col() +
   coord_flip() +
   scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) + 
@@ -70,23 +65,15 @@ pride |>
        x = NULL)
 
 pride |> 
-  mutate(title = fct_reorder(title, popularity)) |> 
+  mutate(p_title = fct_reorder(p_title, popularity)) |> 
   filter(popularity > 35) |> 
-  ggplot(aes(x = title, y = log(popularity), color = NULL, fill = log(popularity))) +
+  ggplot(aes(x = p_title, y = log(popularity), color = NULL, fill = log(popularity))) +
   geom_col() +
   coord_flip() +
   scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
   theme_minimal() + 
   labs(y = 'Popularity',
        x = NULL)  
-
-```
-```{r}
-
-pride |> 
-  ggplot(aes(x = log(popularity))) +
-  geom_boxplot() 
-
 
 ```
 
@@ -139,39 +126,6 @@ pride |>
 
 ```
 
-```{r}
-df_missions <-
-  df_astro %>% 
-  group_by(name) %>% 
-  summarize(
-    hours = sum(hours_mission),
-    year = min(year_of_mission),
-    max_year = max(year_of_mission)
-  ) %>% 
-  ungroup() %>% 
-  mutate(year = -year) %>% 
-  arrange(year) %>% 
-  mutate(id = row_number())
-
-df_labs <-
-  df_missions %>% 
-  filter(year %in% c(-1961, -197:-201*10, -2019)) %>% 
-  group_by(year) %>% 
-  filter(id == min(id)) 
-
-df_labs <- pride |> 
-  filter(vote_count > 200,
-         release_year %in% c(1943, 1960, 2000, 2010, 2020)) |> 
-  group_by(release_year) |> 
-  summarise(release_year = min(release_year),
-            id = first(id))
-
-
-pride |> 
-  filter(vote_count > 200) |> 
-  arrange(release_date)
-```
-
 
 
 ```{r plot, fig.width = 25, fig.height = 23.63}
@@ -179,7 +133,8 @@ pride |>
 
 
 pride_graf <- pride |> 
-  filter(vote_count > 200) |> 
+  filter(vote_count > 200,
+         popularity > 1) |> 
   mutate(id = fct_reorder(id, desc(release_date)),
          release_id = row_number(id))
 
@@ -192,24 +147,26 @@ df_labs <- pride_graf |>
             release_id = first(release_id))
 
 
-pride_graf|>
+skeleton <- pride_graf|>
   ggplot(aes(x = release_id, y = log(popularity), color = -release_year, fill = -release_year)) +
   geom_link(aes(x = release_id, xend = release_id, y = 0 , yend = log(popularity), 
                            alpha = log(popularity)), n = 300, size = 1) +
   coord_polar(theta = "y", start = 3*pi/2, clip = "off") + 
   geom_point(aes(y = 0), shape = 17, size = 2) + 
-  geom_point(aes(y = log(popularity), size = vote_average)) + 
+  geom_point(aes(y = log(popularity), size = vote_average)) +
   geom_text(data = df_labs, aes(y = 0, label = "|"), family = "Changa", fontface = "bold", size = 5, vjust = 1) + 
   scale_color_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
   geom_richtext(data = df_labs, aes(y = 0, label = release_year), size = 11, family = "Oswald", fontface = "bold",
                 fill = NA, label.color = NA, vjust = 1.5) + 
-  ylim(0, 6.5) + 
-  xlim(-30, 239) + 
+  # ylim(0, 6.5) + 
+  # xlim(-30, 239) + 
+  theme_void() + 
+  theme(legend.position = 'none',
+        plot.background = element_rect(fill = "white")) + 
   labs(x = NULL,
        y = NULL) + 
-  theme(legend.position = 'none') + 
-    geom_textbox(data = tibble(release_id = 239, popularity = 6, label = "<b style='font-size:38pt;'>Most Popular LGBTQ+ Movies</b><br><br>", release_year = 1943), aes(x = release_id, y = popularity, label = label), nherit.aes = F,
-      size = 7.3,
+  geom_textbox(data = tibble(release_id = 239, popularity = 6, label = "<b style='font-size:38pt;'>Most Popular LGBTQ+ Movies of All Time</b><br><br>", release_year = 1943), aes(x = release_id, y = popularity, label = label),
+      size = 8,
       family = "Oswald",
       color = "black",
       lineheight = 1.3,
@@ -218,99 +175,95 @@ pride_graf|>
       vjust = -.8,
       fill = NA,
       box.colour = NA) + 
-  annotate("text", x = 239, y = 4.7, label = "Visualization by Vicente Andrade • Data by TidyRainbow • Curated by Cara Cuiule",
-      family = "Oswald",
-      size = 5.6, 
-      color = "grey50",
-      hjust = .65)
+  annotate("text", x = 239, y = 4.7, label = "Visualization by Vicente Andrade • Data by TidyRainbow from TMDB • Curated by Cara Cuiule", family = "Oswald", size = 5.6, color = "grey50", hjust = .68) +
+    scale_x_continuous(limits = c(-40,239)) +
+    scale_y_continuous(limits = c(0, 6.5)) 
+  
 
-
-```
-
-
-
-
-
-
-```{r plot, fig.width = 25, fig.height = 23.63}
-
-pride_graf|>
-  ggplot(aes(x = release_id, y = log(popularity) - 2, color = -release_year, fill = -release_year)) +
-  geom_link(aes(x = release_id, xend = release_id, y = 0 , yend = log(popularity)- 2, 
-                           alpha = log(popularity)), n = 300, size = 1) +
-  coord_polar(theta = "y", start = 3*pi/2, clip = "off") + 
-  geom_point(aes(y = 0), shape = 17, size = .3) + 
-  geom_point(aes(y = log(popularity)- 2, size = vote_average)) + 
-  geom_text(data = df_labs, aes(y = 0, label = "|"), family = "Changa", fontface = "bold", size = 4, vjust = 1) + 
-  scale_color_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
-  geom_richtext(data = df_labs, aes(y = 0, label = release_year), size = 7, family = "Oswald", fontface = "bold",
-                fill = NA, label.color = NA, vjust = 1) + 
-  ylim(0, 6.5) + 
-  xlim(-30, 239) + 
-  labs(x = NULL,
-       y = NULL) + 
-  theme(legend.position = 'none')
-
-```
-
-```{r plot, fig.width = 25, fig.height = 23.63}
-
-pride_graf|>
-  ggplot(aes(x = release_id, y = popularity - 3 , color = -release_year, fill = -release_year)) +
-  geom_link(aes(x = release_id, xend = release_id, y = 0 , yend = popularity - 3, 
-                           alpha = popularity), n = 300, size = 1) +
-  coord_polar(theta = "y", start = 3*pi/2, clip = "off") + 
-  geom_point(aes(y = 0), shape = 17, size = .3) + 
-  geom_point(aes(y = popularity - 3, size = vote_average)) + 
-  geom_text(data = df_labs, aes(y = 0, label = "|"), family = "Changa", fontface = "bold", size = 4, vjust = 1) + 
-  scale_color_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
-  geom_richtext(data = df_labs, aes(y = 0, label = release_year), size = 7, family = "Oswald", fontface = "bold",
-                fill = NA, label.color = NA, vjust = .85) + 
-  xlim(-30, 239) + 
-  ylim(0, 100) + 
-  labs(x = NULL,
-       y = NULL) + 
-  theme(legend.position = 'none')
+skeleton
 
 
 
 ```
-
-
-geom_richtext(
-      data = df_labs,
-      aes(y = 0, label = glue::glue("<br>{abs(year)}")),
-      size = 5.5,
-      family = "Oswald",
-      fontface = "bold",
-      fill = NA,
-      label.color = NA,
-      vjust = .85
-    )
-
-
 
 
 ```{r}
 
-pride |> 
-  filter(popularity > 1, vote_count > 200) |> 
-  mutate(id = fct_reorder(id, desc(release_date))) |> 
-  ggplot(aes(x = id, y = log(popularity) - 2, color = -release_year, fill = -release_year)) +
-  geom_link(aes(x = id, xend = id, y = 0 ,yend = log(popularity) - 2, 
-                           alpha = log(popularity) - 2), n = 300, size = 1) +
-  coord_polar(theta = "y", start = 3*pi/2, clip = "off") + 
-  geom_point(aes(y = 0), shape = 17, size = .3) + 
-  geom_point(aes(y = log(popularity) - 2, size = vote_average)) + 
-  geom_text(aes(y = 0, label = "|"), family = "Changa", fontface = "bold", size = 4, vjust = 1) + 
-  scale_color_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
-  geom_richtext(aes(y = 0, label = release_year), size = 5.5, family = "Oswald", fontface = "bold",
-                fill = NA, label.color = NA, vjust = .85) + 
-  ylim(0, 6)
+pride_graf |> 
+  group_by(release_year) |> 
+  summarise(n = n(),
+            adult = sum(adult == TRUE),
+            videos = sum(video == TRUE),
+            vote_average = mean(vote_average)) |>
+  mutate(rep_adult = adult/n) |> 
+  arrange(desc(release_year)) |> 
+  ggplot(aes(x = release_year, y = n, color = NULL, fill = release_year)) +
+  geom_col() + 
+  theme_minimal() +
+  labs(x = 'Ano de Lançamento',
+       y = NULL) + 
+  scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) + 
+  xlim(1970, 2022)
+
+pride_graf |> 
+  mutate(p_title = fct_reorder(p_title, popularity)) |> 
+  slice_max(order_by = popularity, n = 12) |> 
+  ggplot(aes(x = p_title, y = log(popularity), color = NULL, fill = -release_year)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
+  theme_minimal() + 
+  labs(y = 'Popularity',
+       x = NULL) 
+  
+
+```
+
+```{r plot, fig.width = 25, fig.height = 23.63}
+
+df_text <- pride_graf |>
+  arrange(desc(popularity)) |> 
+  slice(c(1:12, 133)) |> 
+  mutate(label = glue::glue("<b style='font-size:25pt;'>{p_title}</b> <span style='font-size:20pt;'>({release_year})</span><br><span style='color:#909090; font-size:18pt;'> Average Grade {vote_average} </span>"),
+         vjust = c(0,0,0,0,0,.7,0,0,0,0,0,1.4,.3)) 
+  
+skeleton + 
+  geom_richtext(data = df_text, aes(label = label, vjust = vjust), size = 3.2, family = "Oswald", hjust = .5, lineheight = 1.2, fill = NA, label.color = NA)
+
 
 
 ```
 
+
+
+df_text <-
+  df_missions %>% 
+  arrange(-hours) %>% 
+  slice(c(1:11, 29)) %>% 
+  mutate(
+    first_name = str_remove(name, ".*, "),
+    last_name = str_remove(name, "(?<=),.*"),
+    name_short = glue::glue("{str_sub(first_name, 0, 1)}. {last_name}"),
+    era = glue::glue("'{str_sub(abs(year), 3, 4)}–'{str_sub(max_year, 3, 4)}"),
+    label = glue::glue("<b style='font-size:13pt;'>{name_short}</b>  <span style='font-size:10pt;'>({era})</span><br><span style='color:#909090;'>{format(floor(hours), big.mark = ',')} hours ~ {round(hours / 8760, 1)} years</span>"),
+    vjust = c(-.55, -.55, -.55, -.55, -.55, 1.55, .55, -.55, -.4, 1.55, 1.55, 1.55)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    hours = case_when(
+      last_name == "Yurchikhin" ~ hours + 650,
+      last_name == "Borisenko" ~ hours + 220,
+      last_name == "Kaleri" ~ hours + 100,
+      last_name == "Padalka" ~ hours - 500,
+      TRUE ~ hours
+    ),
+    id = case_when(
+      last_name == "Kaleri" ~ id + 10L,
+      last_name == "Borisenko" ~ id - 18L,
+      last_name == "Padalka" ~ id - 60L,
+      TRUE ~ id
+    )
+  )
 
 
 
