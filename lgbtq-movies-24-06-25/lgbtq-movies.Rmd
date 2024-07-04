@@ -225,10 +225,11 @@ df_text <- pride_graf |>
   arrange(desc(popularity)) |> 
   slice(c(1:12, 133)) |> 
   mutate(label = glue::glue("<b style='font-size:25pt;'>{p_title}</b> <span style='font-size:20pt;'>({release_year})</span><br><span style='color:#909090; font-size:18pt;'> Average Grade {vote_average} </span>"),
-         vjust = c(0,0,0,0,0,.7,0,0,0,0,0,1.4,.3)) 
+         vjust = c(1,1,1,1,1,.7,1,1,1,1,1,1,0),
+         hjust = c(0,0,-2,0,0,0,0,0,0,0,0,0,2)) 
   
 skeleton + 
-  geom_richtext(data = df_text, aes(label = label, vjust = vjust), size = 3.2, family = "Oswald", hjust = .5, lineheight = 1.2, fill = NA, label.color = NA)
+  geom_richtext(data = df_text, aes(label = label, vjust = vjust, hjust = hjust), size = 3.2, family = "Oswald", hjust = .5, lineheight = 1.2, fill = NA, label.color = NA)
 
 
 
