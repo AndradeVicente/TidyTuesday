@@ -175,7 +175,7 @@ skeleton <- pride_graf|>
       vjust = -.8,
       fill = NA,
       box.colour = NA) + 
-  annotate("text", x = 239, y = 4.7, label = "Visualization by Vicente Andrade • Data by TidyRainbow from TMDB • Curated by Cara Cuiule", family = "Oswald", size = 5.6, color = "grey50", hjust = .68) +
+  annotate("text", x = 220, y = 4.7, label = "Visualization by Vicente Andrade • Data by TidyRainbow from TMDB • Curated by Cara Cuiule", family = "Oswald", size = 6, color = "grey50", hjust = .68) +
     scale_x_continuous(limits = c(-40,239)) +
     scale_y_continuous(limits = c(0, 6.5)) 
   
@@ -207,7 +207,7 @@ pride_graf |>
 
 pride_graf |> 
   mutate(p_title = fct_reorder(p_title, popularity)) |> 
-  slice_max(order_by = popularity, n = 12) |> 
+  slice_max(order_by = popularity, n = 9) |> 
   ggplot(aes(x = p_title, y = log(popularity), color = NULL, fill = -release_year)) +
   geom_col() +
   coord_flip() +
@@ -216,55 +216,39 @@ pride_graf |>
   labs(y = 'Popularity',
        x = NULL) 
   
+pride_graf |> 
+  mutate(p_title = fct_reorder(p_title, popularity)) |> 
+  slice_max(order_by = popularity, n = 15) |> 
+  ggplot(aes(x = p_title, y = log(popularity), color = NULL, fill = -release_year)) +
+  geom_col() +
+  coord_flip() +
+  scale_fill_gradientn(colours = c('#00ecff','#00ff04','#fff400', '#ff7400', '#ff0000')) +
+  theme_minimal() + 
+  labs(y = 'Popularity',
+       x = NULL) 
 
 ```
-
 ```{r plot, fig.width = 25, fig.height = 23.63}
 
 df_text <- pride_graf |>
   arrange(desc(popularity)) |> 
-  slice(c(1:12, 133)) |> 
-  mutate(label = glue::glue("<b style='font-size:25pt;'>{p_title}</b> <span style='font-size:20pt;'>({release_year})</span><br><span style='color:#909090; font-size:18pt;'> Average Grade {vote_average} </span>"),
-         vjust = c(1,1,1,1,1,.7,1,1,1,1,1,1,0),
-         hjust = c(0,0,-2,0,0,0,0,0,0,0,0,0,2)) 
-  
-skeleton + 
-  geom_richtext(data = df_text, aes(label = label, vjust = vjust, hjust = hjust), size = 3.2, family = "Oswald", hjust = .5, lineheight = 1.2, fill = NA, label.color = NA)
+  slice(c(1:8, 12, 133)) |> 
+  mutate(label = glue::glue("<span style='text-align:center; display:block;'><b style='font-size:25pt;'>{p_title}</b> <span style='font-size:20pt;'>({release_year})</span></span><br>"),
+           vjust = c(.45, 0.6, .6, .6, .6, .6, .6, .7,.6 , .55),
+         hjust = c(1.05, 1.02, 1.02, 1.02, 1.02, 1.02, 1.02, 1,1.02 , -0.05))  
 
+rainbow <- skeleton + 
+  geom_richtext(data = df_text, aes(label = label, vjust = vjust, hjust = hjust), family = "Oswald", fill = NA, label.color = NA) 
 
+# ggsave('rainbow.jpg',plot = rainbow, dpi = 320, )
 
 ```
 
 
 
-df_text <-
-  df_missions %>% 
-  arrange(-hours) %>% 
-  slice(c(1:11, 29)) %>% 
-  mutate(
-    first_name = str_remove(name, ".*, "),
-    last_name = str_remove(name, "(?<=),.*"),
-    name_short = glue::glue("{str_sub(first_name, 0, 1)}. {last_name}"),
-    era = glue::glue("'{str_sub(abs(year), 3, 4)}–'{str_sub(max_year, 3, 4)}"),
-    label = glue::glue("<b style='font-size:13pt;'>{name_short}</b>  <span style='font-size:10pt;'>({era})</span><br><span style='color:#909090;'>{format(floor(hours), big.mark = ',')} hours ~ {round(hours / 8760, 1)} years</span>"),
-    vjust = c(-.55, -.55, -.55, -.55, -.55, 1.55, .55, -.55, -.4, 1.55, 1.55, 1.55)
-  ) %>% 
-  ungroup() %>% 
-  mutate(
-    hours = case_when(
-      last_name == "Yurchikhin" ~ hours + 650,
-      last_name == "Borisenko" ~ hours + 220,
-      last_name == "Kaleri" ~ hours + 100,
-      last_name == "Padalka" ~ hours - 500,
-      TRUE ~ hours
-    ),
-    id = case_when(
-      last_name == "Kaleri" ~ id + 10L,
-      last_name == "Borisenko" ~ id - 18L,
-      last_name == "Padalka" ~ id - 60L,
-      TRUE ~ id
-    )
-  )
+
+
+
 
 
 
