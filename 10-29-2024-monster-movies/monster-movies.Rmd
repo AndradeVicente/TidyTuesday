@@ -1,0 +1,126 @@
+---
+title: "Monster-Movies"
+author: "Vandrade"
+date: "2024-10-29"
+output: html_document
+---
+
+# Librarys
+```{r}
+
+library(tidyverse)
+library(tidytuesdayR)
+
+```
+
+# Importing monster movies database
+```{r}
+
+tuesdata <- tt_load('2024-10-29')
+
+df_monster_raw <- tuesdata$monster_movies
+
+```
+
+
+
+```{r}
+
+df_monster_raw |> 
+  mutate(original_title = fct_reorder(original_title, average_rating)) |> 
+  filter(average_rating > 8.5) |> 
+  ggplot(aes(x = original_title, y = average_rating, fill = year)) +
+  geom_col() +
+  coord_flip()
+
+df_monster_raw |> 
+  
+
+```
+
+## One Hot Encoding
+
+```{r}
+
+df_monster_wide <- df_monster_raw |> 
+  separate_rows(genres, sep = ',') |> 
+  mutate(value = 1) |> 
+  pivot_wider(names_from = genres, values_from = value, values_fill = 0)
+  
+df_monster_long <- df_monster_raw |> 
+  separate_rows(genres, sep = ',') |> 
+  group_by(genres) |> 
+  mutate(total_genres = n()) |> 
+  ungroup()
+
+df_monster_long |> 
+  filter(total_genres >= 100) |> 
+  ggplot(aes(x = average_rating, fill = genres)) +
+  geom_density(alpha = .76)
+
+
+```
+
+
+```{r}
+
+df_monster_long |> 
+  mutate(genres = fct_reorder(genres, total_genres)) |> 
+  filter(total_genres >= 80) |> 
+  ggplot(aes(x = average_rating, y = genres)) +
+  geom_violin(scale = "count")
+
+df_monster_long |> 
+  mutate(genres = fct_reorder(genres, total_genres)) |> 
+  filter(total_genres >= 80) |> 
+  ggplot(aes(x= year, y= genres)) +
+  geom_violin(scale = "count")
+
+```
+
+
+```{r}
+
+df_monster_wide |> 
+  filter(`Sci-Fi`== 1,
+         title_type == 'movie') |> 
+  arrange(desc(num_votes))
+  
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
