@@ -10,35 +10,22 @@ output: html_document
 
 library(tidyverse)
 library(tidytuesdayR)
-
+library(ggvenn)
 ```
 
-# Importing monster movies database
+# Importing Data
 ```{r}
 
 tuesdata <- tt_load('2024-10-29')
 
-df_monster_raw <- tuesdata$monster_movies
+df_monster_raw <- tuesdata$monster_movies |> 
+  select(year, runtime_minutes, genres, average_rating, num_votes, everything(), -simple_title)
+
+df_monster_raw |> head(3)
 
 ```
 
-
-
-```{r}
-
-df_monster_raw |> 
-  mutate(original_title = fct_reorder(original_title, average_rating)) |> 
-  filter(average_rating > 8.5) |> 
-  ggplot(aes(x = original_title, y = average_rating, fill = year)) +
-  geom_col() +
-  coord_flip()
-
-df_monster_raw |> 
-  
-
-```
-
-## One Hot Encoding
+## One Hot    
 
 ```{r}
 
@@ -46,14 +33,114 @@ df_monster_wide <- df_monster_raw |>
   separate_rows(genres, sep = ',') |> 
   mutate(value = 1) |> 
   pivot_wider(names_from = genres, values_from = value, values_fill = 0)
+
   
 df_monster_long <- df_monster_raw |> 
   separate_rows(genres, sep = ',') |> 
+  filter(is.na(genres) == FALSE)
+
+```
+
+
+# Exploratory Analysis
+
+## Venn Diagram with classes
+```{r}
+
+top_genres <- df_monster_long |> 
   group_by(genres) |> 
-  mutate(total_genres = n()) |> 
-  ungroup()
+  summarise(n_genres = n()) |> 
+  arrange(desc(n_genres)) |> 
+  top_n(3, n_genres) |> 
+  pull(genres)
+
+genre_list <- df_monster_long |> 
+  filter(genres %in% top_genres) |> 
+  group_by(genres) |> 
+  summarise(movies = list(unique(primary_title))) |> 
+  deframe()
+
+genre_list |> 
+  ggvenn(fill_color = c('#3a2f5a', '#73a8a0', '#faffa5'), stroke_size = .5) + 
+  label()
+
+
+```
+## Freq of genres
+```{r}
 
 df_monster_long |> 
+  group_by(genres) |> 
+  summarise(n_genres = n()) |> 
+  mutate(genres = fct_reorder(genres, n_genres)) |> 
+  ggplot(aes(x = genres, y = n_genres)) + 
+  geom_col() + 
+  coord_flip()
+
+```
+
+## Violin
+
+### Top 10 Genres 
+
+```{r}
+
+top_10_genres <- df_monster_long |> 
+  group_by(genres) |> 
+  summarise(n_genres = n()) |>
+  slice_max(order_by = n_genres, n = 10) |> 
+  pull(genres)
+
+
+df_monster_long |> 
+  filter(genres %in% top_10_genres) |> 
+  group_by(genres) |> 
+  mutate(n_genres = n()) |>
+  ungroup() |> 
+  mutate(genres = fct_reorder(genres, n_genres)) |> 
+  ggplot(aes(x = average_rating, y = genres)) +
+  geom_violin(scale = "count")
+
+```
+o que surpreendeu aqui foi a alta nota dos documentarios. sera que isso reflete um punblico muito nichado e engajado?
+
+### Without 25%
+
+```{r}
+
+df_monster_long_75 <- df_monster_long |> 
+  group_by(genres) |> 
+  mutate(first_quartile = quantile(num_votes, probs = .25)) |> 
+  filter(num_votes > first_quartile) |> 
+  ungroup()
+
+
+top_10_genres_75 <- df_monster_long_75 |> 
+  group_by(genres) |>
+  summarise(n_genres = n()) |>
+  slice_max(order_by = n_genres, n = 10) |> 
+  pull(genres)
+
+
+df_monster_long_75 |> 
+  filter(genres %in% top_10_genres_75) |> 
+  group_by(genres) |> 
+  mutate(n_genres = n()) |>
+  ungroup() |> 
+  mutate(genres = fct_reorder(genres, n_genres)) |> 
+  ggplot(aes(x = average_rating, y = genres)) +
+  geom_violin(scale = "count")
+
+
+```
+
+
+```{r}
+
+
+
+
+f_monster_long |> 
   filter(total_genres >= 100) |> 
   ggplot(aes(x = average_rating, fill = genres)) +
   geom_density(alpha = .76)
@@ -75,29 +162,6 @@ df_monster_long |>
   filter(total_genres >= 80) |> 
   ggplot(aes(x= year, y= genres)) +
   geom_violin(scale = "count")
-
-```
-
-
-```{r}
-
-df_monster_wide |> 
-  filter(`Sci-Fi`== 1,
-         title_type == 'movie') |> 
-  arrange(desc(num_votes))
-  
-
-
-```
-
-
-
-
-
-
-
-
-
 
 
 
