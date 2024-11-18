@@ -11,6 +11,10 @@ output: html_document
 library(tidyverse)
 library(tidytuesdayR)
 library(ggvenn)
+library(showtext)
+library(ggtext)
+
+
 ```
 
 # Importing Data
@@ -24,8 +28,36 @@ df_monster_raw <- tuesdata$monster_movies |>
 df_monster_raw |> head(3)
 
 ```
+# Setting Color Palette
+```{r}
 
-## One Hot    
+palette <- c("#c50000", "#F8F3F0", "#000000", "#e8e4da", "#4b4b4b")
+
+```
+
+
+# Adding Fonts
+
+```{r}
+
+font_add("Stilson-Regular", "../fonts/stilson/OTF/Stilson Regular.otf")
+font_add("Stilson-Bold", "../fonts/stilson/OTF/Stilson Bold.otf")
+font_add("Stilson-Italic", "../fonts/stilson/OTF/Stilson Italic.otf")
+font_add("Stilson-BoldItalic", "../fonts/stilson/OTF/Stilson Bold Italic.otf")
+
+font_add("Franklin-Regular", "../fonts/franklin-gothic/News_Gothic/NewsGothicStd.otf")
+font_add("Franklin-Bold", "../fonts/franklin-gothic/News_Gothic/NewsGothicStd-Bold.otf")
+font_add("Franklin-Oblique", "../fonts/franklin-gothic/News_Gothic/NewsGothicStd-Oblique.otf")
+font_add("Franklin-Oblique-Bold", "../fonts/franklin-gothic/News_Gothic/NewsGothicStd-BoldOblique.otf")
+
+font_add("Monsters-Regular", "../fonts/wolves-monsters/OTF/Wolves Vs Monster.otf")
+font_add("Zombie-Regular", "../fonts/ZombieBrush/OpenType-PS/Zombie Brush.otf")
+
+
+```
+
+
+# Separating Genres
 
 ```{r}
 
@@ -42,9 +74,10 @@ df_monster_long <- df_monster_raw |>
 ```
 
 
-# Exploratory Analysis
+#  Analysis
 
-## Venn Diagram with classes
+## Venn Diagram with genres 
+terrible plot. will try with ggplot2
 ```{r}
 
 top_genres <- df_monster_long |> 
@@ -61,130 +94,182 @@ genre_list <- df_monster_long |>
   deframe()
 
 genre_list |> 
-  ggvenn(fill_color = c('#3a2f5a', '#73a8a0', '#faffa5'), stroke_size = .5) + 
-  label()
+  ggvenn(fill_color = c('#3a2f5a', '#73a8a0', '#faffa5'), stroke_size = .5) 
 
 
 ```
-## Freq of genres
-```{r}
+
+## Fig 1 - Bar Plot - Frequence
+
+```{r dpi=1200}
 
 df_monster_long |> 
   group_by(genres) |> 
   summarise(n_genres = n()) |> 
   mutate(genres = fct_reorder(genres, n_genres)) |> 
-  ggplot(aes(x = genres, y = n_genres)) + 
-  geom_col() + 
-  coord_flip()
+  ggplot(aes(x = genres, y = n_genres, fill = n_genres)) + 
+  geom_col(width = .8) + 
+  
+  # geom_text(aes(label = n_genres), hjust = -0.2, color = "#562e2e", size = 3.5) + 
+  coord_flip() + 
+  
+  theme_minimal() + 
+  labs(title = 'The Genres of <span style="color:#c50000; font-family:Zombie-Regular; font-size:40px;">Monster Movies</span>',
+       subtitle = 'Analyzing movies with "Monster" in the title!',
+       caption = 'Data from IMDb | Visualization by <span style="font-family:Zombie-Regular; font-size:16px;">VANDRADE</span>',
+       y = 'Film Count',
+       x = NULL) + 
+  
+  scale_fill_gradientn(colors = "#c50000") +
+  scale_y_continuous(breaks = seq(0, 211, by = 25)) +
+  
+  theme(
+    plot.background = element_rect(fill = "#F8F3F0", color = NA), 
+    panel.background = element_rect(fill = "#F8F3F0", color = NA),
+    
+    text = element_text(color = "#4b4b4b"),
+    
+    # axis.text.x = element_blank(),
+    axis.text.x = element_text(family = "Stilson-Italic", size = 12),
+    axis.title.x = element_text(family = "Stilson-Bold", size = 15, vjust = .5),
+    
+    axis.text.y = element_text(margin = margin(r = -20), family = "Stilson-Bold", size = 13, color = "#4b4b4b"),
+    
+    plot.title = element_markdown(size = 28, family = "Stilson-Bold", color = "#000000"),  
+    plot.subtitle = element_text(size = 17, hjust = 0.01, family = "Stilson-Bold"),
+    
+    plot.caption = element_markdown(size = 12, family = "Stilson-Bold", hjust = .95, color = "#000000"),
+    
+    # panel.grid = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(color = "#e8e4da"),
+    panel.grid.minor = element_blank(),
+    
+    legend.position = "none",
+    
+    plot.margin = margin(t = 15, r = 0, b = 10, l = 15))
+
 
 ```
+## Votes
 
-## Violin
-
-### Top 10 Genres 
 
 ```{r}
 
-top_10_genres <- df_monster_long |> 
+df_monster_raw |> 
+  filter(title_type == 'movie') |>   
+  ggplot(aes(x= num_votes)) + 
+  geom_histogram(fill = "#c50000", colour = "white", bins = 30) + 
+  xlim(0, 10000) + 
+  theme_minimal() + 
+  labs(title = 'Density of Votes of <span style="color:#c50000; font-family:Zombie-Regular; font-size:40px;">Monster Movies</span>',
+       subtitle = 'Analyzing movies with "Monster" in the title!',
+       caption = 'Data from IMDb | Visualization by <span style="font-family:Zombie-Regular; font-size:16px;">VANDRADE</span>',
+       y = 'Density',
+       x = NULL) + 
+  
+    theme(
+    plot.background = element_rect(fill = "#F8F3F0", color = NA), 
+    panel.background = element_rect(fill = "#F8F3F0", color = NA),
+    
+    text = element_text(color = "#4b4b4b"),
+    
+    # axis.text.x = element_blank(),
+    axis.text.x = element_text(family = "Stilson-Italic", size = 12, hjust = 1),
+    axis.title.x = element_text(family = "Stilson-Bold", size = 15, vjust = .5),
+    
+    axis.text.y = element_text(margin = margin(r = -20), family = "Stilson-Bold", size = 13, color = "#4b4b4b"),
+    axis.title.y = element_blank(),
+    
+    plot.title = element_markdown(size = 28, family = "Stilson-Bold", color = "#000000"),  
+    plot.subtitle = element_text(size = 17, hjust = 0.01, family = "Stilson-Bold"),
+    
+    plot.caption = element_markdown(size = 12, family = "Stilson-Bold", hjust = .95, color = "#000000"),
+    
+    # panel.grid = element_blank(),
+    panel.grid.major.y = element_blank(),
+    panel.grid.major.x = element_line(color = "#e8e4da"),
+    panel.grid.minor = element_blank(),
+    
+    legend.position = "none") 
+
+
+```
+
+
+
+## Rating
+
+### Selecting the top 50% films with more votes 
+
+to avoid outliers in the rating.
+
+```{r}
+
+most_popular <- df_monster_raw |> 
+  filter(num_votes > median(num_votes)) |> 
+  pull(tconst) 
+
+top_5_genres <- df_monster_long |> 
+  filter(tconst %in% most_popular) |> 
   group_by(genres) |> 
   summarise(n_genres = n()) |>
-  slice_max(order_by = n_genres, n = 10) |> 
+  slice_max(order_by = n_genres, n = 5) |> 
   pull(genres)
 
+```
+## Fig 2 - Violin Plot - Rating
+
+```{r dpi=1200}
 
 df_monster_long |> 
-  filter(genres %in% top_10_genres) |> 
+  filter(genres %in% top_5_genres) |> 
   group_by(genres) |> 
   mutate(n_genres = n()) |>
   ungroup() |> 
   mutate(genres = fct_reorder(genres, n_genres)) |> 
-  ggplot(aes(x = average_rating, y = genres)) +
-  geom_violin(scale = "count")
+  
+  ggplot(aes(y = average_rating, x = genres)) +
+  geom_violin(scale = "count",draw_quantiles = TRUE, fill = "#c50000", colour = NA ) + 
+  geom_boxplot(width = 0.05, outlier.shape = NA, color = "#c50000", fill = "#F8F3F0", alpha = 1 ) +
 
-```
-o que surpreendeu aqui foi a alta nota dos documentarios. sera que isso reflete um punblico muito nichado e engajado?
+  theme_minimal() +
+  
+  scale_y_continuous(breaks = seq(0, 10, by = 1), limits = c(0,10)) +
 
-### Without 25%
+  
+  labs(title = 'Ratings Distribution for <span style="color:#c50000; font-family:Zombie-Regular; font-size:40px;">Monster Movies</span>',
+       subtitle = "Exploring IMDb Ratings Across the Top 5 'Monster' Movie Genres",
+       caption = 'Data from IMDb | Visualization by <span style="font-family:Zombie-Regular; font-size:16px;">VANDRADE</span>',
+       x = "Top 5 Monster Movie Genres",
+       y = "Average Rating") + 
+  
+  theme(
+    plot.background = element_rect(fill = "#F8F3F0", color = NA), 
+    panel.background = element_rect(fill = "#F8F3F0", color = NA),
+    
+    text = element_text(color = "#4b4b4b"),
+    
+    # axis.text.x = element_blank(),
+    axis.text.x = element_text(family = "Stilson-Italic", size = 15, vjust = 4),
+    axis.title.x = element_blank(),
+    
+    axis.text.y = element_text(margin = margin(r = 0), family = "Stilson-Italic", size = 13, color = "#4b4b4b"),
+    axis.title.y = element_blank(),
+    
+    plot.title = element_markdown(size = 28, face = "bold", family = "Stilson-Bold", color = "#000000"),  
+    plot.subtitle = element_text(size = 17, hjust = 0.01, family = "Stilson-Bold"),
+    
+    plot.caption = element_markdown(size = 12, family = "Stilson-Bold", hjust = .95, color = "#000000"),
+    
+    panel.grid.major.x  = element_blank(),
+    panel.grid.minor = element_blank(),
 
-```{r}
+    legend.position = "none",
 
-df_monster_long_75 <- df_monster_long |> 
-  group_by(genres) |> 
-  mutate(first_quartile = quantile(num_votes, probs = .25)) |> 
-  filter(num_votes > first_quartile) |> 
-  ungroup()
-
-
-top_10_genres_75 <- df_monster_long_75 |> 
-  group_by(genres) |>
-  summarise(n_genres = n()) |>
-  slice_max(order_by = n_genres, n = 10) |> 
-  pull(genres)
-
-
-df_monster_long_75 |> 
-  filter(genres %in% top_10_genres_75) |> 
-  group_by(genres) |> 
-  mutate(n_genres = n()) |>
-  ungroup() |> 
-  mutate(genres = fct_reorder(genres, n_genres)) |> 
-  ggplot(aes(x = average_rating, y = genres)) +
-  geom_violin(scale = "count")
-
-
-```
-
-
-```{r}
-
-
-
-
-f_monster_long |> 
-  filter(total_genres >= 100) |> 
-  ggplot(aes(x = average_rating, fill = genres)) +
-  geom_density(alpha = .76)
+    plot.margin = margin(t = 15, r = 0, b = 10, l = 15))
 
 
 ```
-
-
-```{r}
-
-df_monster_long |> 
-  mutate(genres = fct_reorder(genres, total_genres)) |> 
-  filter(total_genres >= 80) |> 
-  ggplot(aes(x = average_rating, y = genres)) +
-  geom_violin(scale = "count")
-
-df_monster_long |> 
-  mutate(genres = fct_reorder(genres, total_genres)) |> 
-  filter(total_genres >= 80) |> 
-  ggplot(aes(x= year, y= genres)) +
-  geom_violin(scale = "count")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
