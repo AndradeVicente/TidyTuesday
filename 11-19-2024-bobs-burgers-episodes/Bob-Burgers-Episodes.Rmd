@@ -1,0 +1,147 @@
+---
+title: "Untitled"
+author: "Vandrade"
+date: "2024-11-19"
+output: html_document
+---
+
+# Importing Librarys
+
+```{r}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(showtext)
+library(ggtext)
+library(showtext)
+
+```
+
+```{r}
+
+tuesdata <- tt_load('2024-11-19')
+
+bobs_raw <- tuesdata$episode_metrics 
+
+```
+# Fonts and palettes
+```{r}
+
+font_add("bobs-burgers", "../fonts/bobs-burgers/Bob's Burgers.ttf")
+font_add("bobs-burgers2", "../fonts/bobs-burgers/Bob's Burgers 2.ttf")
+
+font_add("pudding", "../fonts/pudding/Pudding.ttf")
+showtext_auto()
+
+bobs_burgers_palette <- c(
+  "#D3D3D3", 
+  "#A9A9A9", 
+  "#FF6347", 
+  "#4682B4", 
+  "#ADD8E6", 
+  "#000080", 
+  "#FFD700", 
+  "#1E90FF",
+  "#808000",
+  "#FF69B4",
+  "#87CEEB",
+  "#FFA500",
+  "#9370DB",
+  "#8B4513") 
+  
+
+```
+
+
+
+# Creating release_order column
+```{r}
+
+df_bobs <- bobs_raw |>
+  arrange(season, episode) |> 
+  mutate(S_ep = paste0("S", season, "E", episode),
+         order = row_number(),
+         season = as.factor(season),
+         episode = as.factor(episode))
+
+```
+
+
+
+```{r}
+
+df_bobs |>  
+  mutate(S_ep = fct_reorder(S_ep, order),
+         episode = fct_reorder(episode, order)) |> 
+  ggplot(aes(x = season, y = avg_length, fill = season, group = episode)) + 
+  geom_col(position = 'dodge') +
+  labs(
+    title = "Average Number of Characters per line of Dialogue",
+    x = "Season",
+    y = "Average Lenght of Sentences") + 
+  theme_minimal() + 
+  theme(
+    plot.title = element_markdown(family = 'bobs-burgers2', size = 35, hjust = .5),
+    
+    legend.position = 'none',
+    axis.title.y = element_blank(),
+    axis.text.y = element_markdown(family = 'pudding', size = 30),
+    
+    axis.title.x = element_markdown(family = 'pudding', size = 40, vjust = -1),
+    axis.text.x = element_markdown(family = 'pudding', size = 40, margin = margin(t = -15)),
+    
+    plot.background = element_rect(fill = "#F8F3F0", color = NA), 
+    panel.background = element_rect(fill = "#F8F3F0", color = NA),
+    
+    plot.margin = margin(r = 16, t = 10, b = 10, l = 8),
+    panel.grid = element_blank(),
+    panel.grid.major.y = element_line(color = "#ebdada")) +
+  
+  scale_fill_manual(values = bobs_burgers_palette)
+  
+
+
+```
+
+
+```{r}
+
+df_bobs |>  
+  mutate(S_ep = fct_reorder(S_ep, order),
+         episode = fct_reorder(episode, order)) |> 
+  ggplot(aes(x = exclamation_ratio, fill = season)) + 
+  geom_density() +
+  ylim(0, 25) +
+  facet_wrap(~season, nrow = 3) +
+  labs(
+    title = "Ratio of exclamation dialogue",
+    x = "Exclamation"
+  ) + 
+  theme_minimal() + 
+  theme(
+    plot.title = element_markdown(family = 'bobs-burgers2', size = 35), 
+    legend.position = 'none',
+    axis.title.y = element_blank(),
+    axis.title.x = element_markdown(family = 'pudding', size = 40))
+
+```
+
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
